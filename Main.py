@@ -1,9 +1,11 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Nov 17 09:58:18 2022
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+from sklearn import datasets
+from sklearn.neighbors import NearestCentroid
+warnings.filterwarnings('ignore')
 
-@author: idea3c
-"""
-
-print("Hello World!")
+data = pd.read_csv('data/project1_train.csv')
+test = pd.read_csv('data/project1_test.csv')
