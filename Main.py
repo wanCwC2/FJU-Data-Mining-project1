@@ -12,10 +12,16 @@ warnings.filterwarnings('ignore')
 #Read data
 data = pd.read_csv('data/project1_train.csv')
 test = pd.read_csv('data/project1_test.csv')
-
+'''
 #Reviset Male, Female
-data.loc[:, 'Gender'] = ['Male', 1]
-
+for i in range(0, data.shape[0]):
+    data.loc[i, ['Gender', 'Gender']] = ['Male', 1]
+    data.loc[i, ['Gender', 'Gender']] = ['Female', 1]
+'''
+data.loc[data.Gender=='Male', 'Gender'] = 1
+data.loc[data.Gender=='Female', 'Gender'] = 0
+test.loc[test.Gender=='Male', 'Gender'] = 1
+test.loc[test.Gender=='Female', 'Gender'] = 0
 #Find analysis target
 X_df = pd.DataFrame(data, columns = ['Age', 'Gender', 'Total_Bilirubin', 'Direct_Bilirubin',
        'Alkaline_Phosphotase', 'Alamine_Aminotransferase',
