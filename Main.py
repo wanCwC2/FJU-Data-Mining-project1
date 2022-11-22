@@ -7,21 +7,20 @@ from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestCentroid
 from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.neural_network import MLPClassifier
 warnings.filterwarnings('ignore')
 
 #Read data
 data = pd.read_csv('data/project1_train.csv')
 test = pd.read_csv('data/project1_test.csv')
-'''
-#Reviset Male, Female
-for i in range(0, data.shape[0]):
-    data.loc[i, ['Gender', 'Gender']] = ['Male', 1]
-    data.loc[i, ['Gender', 'Gender']] = ['Female', 1]
-'''
+
+#Revise Male, Female
 data.loc[data.Gender=='Male', 'Gender'] = 1
 data.loc[data.Gender=='Female', 'Gender'] = 0
 test.loc[test.Gender=='Male', 'Gender'] = 1
 test.loc[test.Gender=='Female', 'Gender'] = 0
+
 #Find analysis target
 X_df = pd.DataFrame(data, columns = ['Age', 'Gender', 'Total_Bilirubin', 'Direct_Bilirubin',
        'Alkaline_Phosphotase', 'Alamine_Aminotransferase',
@@ -43,3 +42,14 @@ X_test_std = sc.transform(X_test)
 sc_test = StandardScaler()
 sc_test.fit(test)
 test_std = sc_test.transform(test)
+
+#多層感知器 Multi-layer Perceptron / 類神經網路 Neural network
+model = MLPClassifier(
+  hidden_layer_sizes=(10),
+  max_iter=10,
+  solver="adam",
+  random_state=100002
+)
+model.fit(X_train_std, y_train)
+print("Training set score: %f" % model.score(X_train_std, y_train))
+print("Validation set score: %f" % model.score(X_valid_std, y_valid))
