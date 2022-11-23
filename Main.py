@@ -39,6 +39,11 @@ X_train_std = sc.transform(X_train)
 X_valid_std = sc.transform(X_valid)
 X_test_std = sc.transform(X_test)
 
+#Delete too big data
+#X_train_std.drop(X_train_std[X_train_std[:,5]>3].index) #pandas data, but change to array after standardizating
+X_train_std = np.delete(X_train_std, X_train_std[:,5]>3, axis=0)
+X_valid_std = np.delete(X_valid_std, X_valid_std[:,5]>3, axis=0)
+
 sc_test = StandardScaler()
 sc_test.fit(test)
 test_std = sc_test.transform(test)
