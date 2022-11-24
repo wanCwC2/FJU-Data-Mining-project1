@@ -28,6 +28,9 @@ X_df = pd.DataFrame(data, columns = ['Age', 'Gender', 'Total_Bilirubin', 'Direct
        'Albumin_and_Globulin_Ratio'])
 y_df = pd.DataFrame(data, columns = ['Label'])
 
+y_df = y_df.drop(X_df[X_df['Albumin_and_Globulin_Ratio'].isnull()].index)
+X_df = X_df.drop(X_df[X_df['Albumin_and_Globulin_Ratio'].isnull()].index)
+
 #Dvide the data into validation and test sets
 X_train, X_valid, y_train, y_valid = train_test_split(X_df, y_df, train_size=0.6, random_state=0)
 X_valid, X_test, y_valid, y_test = train_test_split(X_valid, y_valid, train_size=0.5, random_state=0)
