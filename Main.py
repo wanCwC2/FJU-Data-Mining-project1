@@ -45,7 +45,7 @@ X_test_std = sc.transform(X_test)
 #Change numpy array to pandas
 X_train_std = pd.DataFrame(X_train_std, index=X_train.index, columns=X_train.columns)
 X_valid_std = pd.DataFrame(X_valid_std, index=X_valid.index, columns=X_valid.columns)
-
+'''
 #Delete too big data
 #X_train_std.drop(X_train_std[X_train_std[:,5]>3].index) #pandas data, but change to array after standardizating
 for i in range(0, X_train_std.shape[1]):
@@ -54,7 +54,7 @@ for i in range(0, X_train_std.shape[1]):
     X_train_std = X_train_std.drop(X_train_std[X_train_std.iloc[:,i]>2].index)
     y_valid = y_valid.drop(X_valid_std[X_valid_std.iloc[:,i]>2].index)
     X_valid_std = X_valid_std.drop(X_valid_std[X_valid_std.iloc[:,i]>2].index)
-
+'''
 sc_test = StandardScaler()
 sc_test.fit(test)
 test_std = sc_test.transform(test)
@@ -84,22 +84,7 @@ DecisionTreeRegressor(random_state = indexRate)
 print("Correct rate using Decision Tree: ", round(model.score(X_test_std, y_test),5))
 
 #Output predict data
-#test_pred = model.predict(test_std).astype(int)
-#index = [i in range(0, test.shape[0])]
-#for i in range(0, test.shape[0]):
-    #pred_data.append([])
-#    index.append('\t'+str(i).zfill(3))
-    #pred_data[i].append(str(int(test_pred[i])))
-#index_df = pd.DataFrame(index, columns = ["Id"])
-#test_pred_df = pd.DataFrame(test_pred, columns = ["Category"])
-#index = (str(i).zfill(3)) for i in range(0,test.shape[0])
 result = pd.DataFrame([], columns=['Id', 'Category'])
 result['Id'] = [f'{i:03d}' for i in range(len(test))]
 result['Category'] = model.predict(test_std).astype(int)
-#result = pd.DataFrame(pred_data, columns = ["Id", "Category"], dtype = 'string')
-#result['Id']=result['Id'].apply('="{}"'.format)
-#test_df.to_csv("predict.csv")
-#result = pd.merge(index_df, test_pred_df)
 result.to_csv("data/predict.csv", index = False)
-
-#test.index.apply(lambda x: '{:0>3d}'.format(x))
