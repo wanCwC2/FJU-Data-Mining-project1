@@ -84,7 +84,7 @@ DecisionTreeRegressor(random_state = indexRate)
 print("Correct rate using Decision Tree: ", round(model.score(X_test_std, y_test),5))
 
 #Output predict data
-#test_pred = model.predict(test_std)
+#test_pred = model.predict(test_std).astype(int)
 #index = [i in range(0, test.shape[0])]
 #for i in range(0, test.shape[0]):
     #pred_data.append([])
@@ -95,7 +95,7 @@ print("Correct rate using Decision Tree: ", round(model.score(X_test_std, y_test
 #index = (str(i).zfill(3)) for i in range(0,test.shape[0])
 result = pd.DataFrame([], columns=['Id', 'Category'])
 result['Id'] = [f'{i:03d}' for i in range(len(test))]
-result['Category'] = model.predict(test_std)
+result['Category'] = model.predict(test_std).astype(int)
 #result = pd.DataFrame(pred_data, columns = ["Id", "Category"], dtype = 'string')
 #result['Id']=result['Id'].apply('="{}"'.format)
 #test_df.to_csv("predict.csv")
