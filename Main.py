@@ -82,3 +82,24 @@ for i in range (1,30):
         indexRate = i
 DecisionTreeRegressor(random_state = indexRate)
 print("Correct rate using Decision Tree: ", round(model.score(X_test_std, y_test),5))
+
+#Output predict data
+#test_pred = model.predict(test_std)
+#index = [i in range(0, test.shape[0])]
+#for i in range(0, test.shape[0]):
+    #pred_data.append([])
+#    index.append('\t'+str(i).zfill(3))
+    #pred_data[i].append(str(int(test_pred[i])))
+#index_df = pd.DataFrame(index, columns = ["Id"])
+#test_pred_df = pd.DataFrame(test_pred, columns = ["Category"])
+#index = (str(i).zfill(3)) for i in range(0,test.shape[0])
+result = pd.DataFrame([], columns=['Id', 'Category'])
+result['Id'] = [f'{i:03d}' for i in range(len(test))]
+result['Category'] = model.predict(test_std)
+#result = pd.DataFrame(pred_data, columns = ["Id", "Category"], dtype = 'string')
+#result['Id']=result['Id'].apply('="{}"'.format)
+#test_df.to_csv("predict.csv")
+#result = pd.merge(index_df, test_pred_df)
+result.to_csv("data/predict.csv", index = False)
+
+#test.index.apply(lambda x: '{:0>3d}'.format(x))
