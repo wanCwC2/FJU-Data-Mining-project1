@@ -40,31 +40,26 @@ X_train , X_test , y_train , y_test = train_test_split(X_df ,y_df , test_size=0.
 
 test = data_standardization(test)
 
-#Decision Tree
-from sklearn.tree import DecisionTreeClassifier
-params = { 'criterion': ["gini", "entropy", "log_loss"],
-           'splitter': ["best", "random"],
-           'min_samples_leaf': [1, 3, 6, 10],
-           'max_depth': [1, 3, 6, 10]}
-'''
+from sklearn.svm import LinearSVC
+params = { 'penalty': ["l1", "l2"],
+           'loss': ["hinge", "squared_hinge"],
+           'C': [1.0, 3.0, 6.0, 10.0],
+           'max_iter': [1000, 3000, 6000, 10000]}
+
 from sklearn.model_selection import GridSearchCV
-model = DecisionTreeClassifier()
+model = LinearSVC()
 clf = GridSearchCV(estimator = model,
                    param_grid = params,
-                   scoring = 'neg_mean_squared_error',
+#                   scoring = 'neg_mean_squared_error',
                    verbose=1)
 clf.fit(X_train, y_train)
 
 print("Best parameters:", clf.best_params_)
 print(clf.best_estimator_)
-#Best parameters: {'criterion': 'gini', 'max_depth': 1, 'min_samples_leaf': 1, 'splitter': 'random'}
-#DecisionTreeClassifier(max_depth=1, splitter='random')
-'''
-dt_params = { 'criterion': "gini",
-           'splitter': "random",
-           'min_samples_leaf': 1,
-           'max_depth': 1}
-model = DecisionTreeClassifier(**dt_params)
+#Best parameters: {'C': 10.0, 'loss': 'squared_hinge', 'max_iter': 6000, 'penalty': 'l2'}
+#LinearSVC(C=10.0, max_iter=6000)
+
+model = LinearSVC(C=10.0, max_iter=6000)
 model.fit(X_train, y_train)
 
 from sklearn.metrics import accuracy_score
@@ -75,4 +70,4 @@ print('XGBoost model accuracy score: {0:0.4f}'. format(accuracy_score(y_test, y_
 result = pd.DataFrame([], columns=['Id', 'Category'])
 result['Id'] = [f'{i:03d}' for i in range(len(test))]
 result['Category'] = model.predict(test).astype(int)
-result.to_csv("data/predict.csv", index = False) #0.73913
+result.to_csv("data/predict.csv", index = False) #0.69
