@@ -28,6 +28,7 @@ X_df = pd.DataFrame(data, columns = ['Age', 'Gender', 'Total_Bilirubin', 'Direct
        'Albumin_and_Globulin_Ratio'])
 y_df = pd.DataFrame(data, columns = ['Label'])
 
+#Delete nan
 y_df = y_df.drop(X_df[X_df['Albumin_and_Globulin_Ratio'].isnull()].index)
 X_df = X_df.drop(X_df[X_df['Albumin_and_Globulin_Ratio'].isnull()].index)
 
@@ -45,6 +46,7 @@ X_test_std = sc.transform(X_test)
 #Change numpy array to pandas
 X_train_std = pd.DataFrame(X_train_std, index=X_train.index, columns=X_train.columns)
 X_valid_std = pd.DataFrame(X_valid_std, index=X_valid.index, columns=X_valid.columns)
+X_test_std = pd.DataFrame(X_test_std, index=X_test.index, columns=X_test.columns)
 '''
 #Delete too big data
 #X_train_std.drop(X_train_std[X_train_std[:,5]>3].index) #pandas data, but change to array after standardizating
@@ -58,29 +60,28 @@ for i in range(0, X_train_std.shape[1]):
 sc_test = StandardScaler()
 sc_test.fit(test)
 test_std = sc_test.transform(test)
+test_std = pd.DataFrame(test_std, index=test.index, columns=test.columns)
 
 #XGBoost
 import xgboost as xgb
 from sklearn.model_selection import GridSearchCV
+'''
 n_estimators = [10,20,30,40,50,60,70,80,90,100]
 max_depth = [1,2,3,4,5,6]
 parameters_to_search = {'n_estimators': n_estimators, 
               'max_depth': max_depth} #設定要訓練的值
-xgbModel = xgb.XGBRegressor(n_estimators = 100, max_depth = 6)
+xgbModel = xgb.XGBRegressor(n_estimators = 50, max_depth = 6)
 xgbModel_cv = GridSearchCV(xgbModel, parameters_to_search, cv=5) #可以直接找出最佳的訓練值
 xgbModel_cv.fit(X_train_std, y_train.values.ravel())
-#xgbScore = xgbModel_cv.score(X_test_std, y_test.values.ravel())
-#print('Correct rate using XGBoost: {:.5f}'.format(xgbScore))
+xgbScore = xgbModel_cv.score(X_test_std, y_test.values.ravel())
+print('Correct rate using XGBoost: {:.5f}'.format(xgbScore))
 '''
-#Use MSE sure whether it has overfitting.
-#print("XGBoost's MSE")
-from sklearn import metrics
-train_pred = xgbModel_cv.predict(X_train_std)
-xgbTrainMse = metrics.mean_squared_error(y_train.values.ravel(), train_pred)
-#print('train data MSE: ', xgbTrainMse)
-#test_pred = xgbModel_cv.predict(X_test_std)
-#xgbTestMse = metrics.mean_squared_error(y_test.values.ravel(), test_pred)
-#print('test data MSE: ', xgbTestMse)
+xgbModel_Classifier = xgb.XGBClassifier(n_estimators = 50, max_depth = 6)
+xgbModel_Classifier.fit(X_train_std, y_train.values.ravel())
+xgbScore_Classifier = xgbModel_Classifier.score(X_test_std, y_test.values.ravel())
+print('Correct rate using XGBoost: {:.5f}'.format(xgbScore_Classifier))
+
+
 '''
 #SVR
 from sklearn.svm import SVR
@@ -102,22 +103,11 @@ for i in range(1, 5):
             svr_epsilon = j/10
 svrModel = make_pipeline(StandardScaler(), SVR(C = svr_c, epsilon = svr_epsilon))
 svrModel.fit(X_train_std, y_train.values.ravel())
-#svrScore = svrModel.score(X_test_std, y_test.values.ravel())
-#print('Correct rate using SVR: {:.5f}'.format(svrScore))
-'''
-#Use MSE sure whether it has overfitting.
-print("SVR's MSE")
-from sklearn import metrics
-train_pred = svrModel.predict(X_train_std)
-svrTrainMse = metrics.mean_squared_error(y_train.values.ravel(), train_pred)
-print('train data MSE: ', svrTrainMse)
-test_pred = svrModel.predict(X_test_std)
-svrTestMse = metrics.mean_squared_error(y_test.values.ravel(), test_pred)
-print('test data MSE: ', svrTestMse)
-'''
+svrScore = svrModel.score(X_test_std, y_test.values.ravel())
+print('Correct rate using SVR: {:.5f}'.format(svrScore))
+
 # Random Forest
 from sklearn.ensemble import RandomForestRegressor
-'''
 rf_maxRate = 0
 rf_state = 0
 for i in range (1,10):
@@ -126,22 +116,11 @@ for i in range (1,10):
     if rf_maxRate < rfModel.score(X_valid_std, y_valid.values.ravel()):
         rf_maxRate = rfModel.score(X_valid_std, y_valid.values.ravel())
         rf_state = i
-'''
 rfModel = RandomForestRegressor(random_state = 408570344)
-#RandomForestRegressor(random_state = rf_state)
-#rfScore = round(rfModel.score(X_test_std, y_test.values.ravel()),5)
-#print("Correct rate using Random Forest: ", rfScore)
-'''
-#Use MSE sure whether it has overfitting.
-print("Random Forest's MSE")
-from sklearn import metrics
-train_pred = rfModel.predict(X_train_std)
-rfTrainMse = metrics.mean_squared_error(y_train.values.ravel(), train_pred)
-print('train data MSE: ', rfTrainMse)
-test_pred = rfModel.predict(X_test_std)
-rfTestMse = metrics.mean_squared_error(y_test.values.ravel(), test_pred)
-print('test data MSE: ', rfTestMse)
-'''
+rfModel.fit(X_train_std, y_train.values.ravel())
+rfScore = round(rfModel.score(X_test_std, y_test.values.ravel()),5)
+print("Correct rate using Random Forest: ", rfScore)
+
 #Stacking
 from sklearn.ensemble import StackingRegressor
 from sklearn.neural_network import MLPRegressor
@@ -154,15 +133,16 @@ estimators = [
 #Stacking將不同模型優缺點進行加權，讓模型更好。
 #final_estimator：集合所有弱學習器訓練出最終預測模型。預設為LogisticRegression。
 stackModel = StackingRegressor(
-    estimators=estimators, final_estimator= MLPRegressor(activation = "relu", alpha = 0.1, hidden_layer_sizes = (8,8),
+    estimators=estimators, final_estimator= MLPRegressor(activation = "relu", alpha = 0.1, hidden_layer_sizes = (3),
                             learning_rate = "constant", max_iter = 200, random_state = 100)
 )
 stackModel.fit(X_train_std, y_train.values.ravel())
-#stackScore = stackModel.score(X_test_std, y_test.values.ravel())
-#print("Correct rate after Stacking: ", stackScore)
+stackScore = stackModel.score(X_test_std, y_test.values.ravel())
+print("Correct rate after Stacking: ", stackScore)
+'''
 
 #Output predict data
 result = pd.DataFrame([], columns=['Id', 'Category'])
 result['Id'] = [f'{i:03d}' for i in range(len(test))]
-result['Category'] = stackModel.predict(test_std).astype(int)
+result['Category'] = xgbModel_Classifier.predict(test_std).astype(int)
 result.to_csv("data/predict.csv", index = False)
