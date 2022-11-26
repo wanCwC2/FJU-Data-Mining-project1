@@ -19,6 +19,7 @@ warnings.filterwarnings('ignore')
 #Read data
 data = pd.read_csv('data/project1_train.csv')
 test = pd.read_csv('data/project1_test.csv')
+#data = data.drop([29, 60, 297, 347])
 
 #Revise Male, Female
 data.loc[data.Gender=='Male', 'Gender'] = 1
@@ -257,18 +258,21 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from xgboost import XGBClassifier
-#弱學習器
+from sklearn.naive_bayes import GaussianNB          # 高斯貝氏分類器 GaussianNB
+from sklearn.naive_bayes import MultinomialNB     # 多項式貝氏分類器 MultinomialNB
+from sklearn.naive_bayes import BernoulliNB         # 伯努力貝氏分類器 Ber
 
 xgb_params = { 'max_depth': 1,
-           'learning_rate': 0.03,
-           'n_estimators': 200,
-           'colsample_bytree': 0.3,
+           'learning_rate': 0.01,
+           'n_estimators': 100,
+           'colsample_bytree': 0.1,
            'random_state': 408570344}
 mlp_params = {'hidden_layer_sizes': (50,),
               'max_iter': 50,
               'solver': "sgd",
-              'random_state': 408570344 }
-
+              'random_state': 408570344}
+#弱學習器
+'''
 estimators = [
     ('xgb', XGBClassifier(**xgb_params)),
     ('svc', svm.SVC(kernel='rbf', degree=degree_max, C=C_max, random_state=408570344)),
@@ -276,6 +280,14 @@ estimators = [
     ('dt', DecisionTreeClassifier(max_depth=depth_max, min_samples_split=2, random_state=408570344)),
     ('knn', KNeighborsClassifier(n_neighbors=2)),
     ('mlp', MLPClassifier(**mlp_params))
+]
+'''
+estimators = [
+    ('xgb', XGBClassifier(**xgb_params)),
+    ('svc', svm.SVC(random_state=408570344)),
+    ('dt', DecisionTreeClassifier(max_depth=1, splitter='random', random_state=408570344)),
+    ('knn', KNeighborsClassifier()),
+    ('nb', GaussianNB())
 ]
 #Stacking將不同模型優缺點進行加權，讓模型更好。
 #final_estimator：集合所有弱學習器訓練出最終預測模型。預設為LogisticRegression。
@@ -286,8 +298,7 @@ stackModel = StackingClassifier(
 )
 '''
 stackModel = StackingClassifier(estimators = estimators,
-#                                final_estimator = ,
-                                stack_method = 'predict')
+                                final_estimator = LogisticRegression())
 stackModel.fit(X_train, y_train)
 stackScore = stackModel.score(X_val, y_val)
 print("Correct rate after Stacking: ", stackScore)

@@ -49,12 +49,12 @@ from xgboost import XGBClassifier
 # declare parameters
 
 params = { 'max_depth': 1,
-           'learning_rate': 0.03,
+           'learning_rate': 0.01,
            'n_estimators': 300,
            'colsample_bytree': 1}
 
 #Find best parameters
-# Best parameters: {'colsample_bytree': 1, 'learning_rate': 0.03, 'max_depth': 1, 'n_estimators': 300}
+#Best parameters: {'colsample_bytree': 1, 'learning_rate': 0.01, 'max_depth': 1, 'n_estimators': 300}
 '''
 params = { 'max_depth': [1, 3, 6, 10],
            'learning_rate': [0.01, 0.03, 0.06, 0.1, 0.3, 0.5],
@@ -67,7 +67,7 @@ clf = GridSearchCV(estimator = xg2,
                    param_grid = params,
                    scoring = 'neg_mean_squared_error',
                    verbose=1)
-clf.fit(X_df, y_df)
+clf.fit(X_train, y_train)
 
 print("Best parameters:", clf.best_params_)
 '''
@@ -79,7 +79,7 @@ xgb_clf.fit(X_train, y_train)
 
 from sklearn.metrics import accuracy_score
 y_pred = xgb_clf.predict(X_test)
-print('XGBoost model accuracy score: {0:0.4f}'. format(accuracy_score(y_test, y_pred)))
+print('XGBoost model accuracy score: {0:0.4f}'. format(accuracy_score(y_test, y_pred))) #0.7092
 
 '''
 import xgboost as xgb
