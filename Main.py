@@ -213,11 +213,11 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 #弱學習器
 estimators = [
-    ('xgb', xgb.XGBClassifier(colsample_bytree= 0.5, learning_rate=0.1, max_depth= 10, n_estimators=200)),
-    ('svc', svm.SVC(kernel='rbf', degree=degree_max, C=C_max)),
+    ('xgb', xgb.XGBClassifier(colsample_bytree= 0.5, learning_rate=0.1, max_depth= 10, n_estimators=200, random_state=408570344)),
+    ('svc', svm.SVC(kernel='rbf', degree=degree_max, C=C_max, random_state=408570344)),
     ('rf', RandomForestClassifier(n_estimators=n_max, max_depth=depth_max, min_samples_split=2, random_state = 408570344)),
-    ('dt', DecisionTreeClassifier()),
-    ('knn', KNeighborsClassifier())
+    ('dt', DecisionTreeClassifier(max_depth=depth_max, min_samples_split=2, random_state=408570344)),
+    ('knn', KNeighborsClassifier(n_neighbors=2))
 ]
 #Stacking將不同模型優缺點進行加權，讓模型更好。
 #final_estimator：集合所有弱學習器訓練出最終預測模型。預設為LogisticRegression。
@@ -227,7 +227,9 @@ stackModel = StackingClassifier(
                             learning_rate = "constant", max_iter = 20, random_state = 408570344)
 )
 '''
-stackModel = StackingClassifier(estimators=estimators, final_estimator=LogisticRegression())
+stackModel = StackingClassifier(estimators=estimators,
+                                final_estimator=LogisticRegression(),
+                                stack_method = 'predict')
 stackModel.fit(X_train, y_train)
 stackScore = stackModel.score(X_test, y_test)
 print("Correct rate after Stacking: ", stackScore)
