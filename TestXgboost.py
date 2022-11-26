@@ -33,19 +33,19 @@ X_df = data_standardization(data)
 y_df = data['Label'].values
 
 #Dvide the data into validation and test sets
-#X_train , X_test , y_train , y_test = train_test_split(X_df ,y_df , test_size=0.3 , random_state=408570344)
+X_train , X_test , y_train , y_test = train_test_split(X_df ,y_df , test_size=0.3 , random_state=408570344)
 
 #XGBoost
 from xgboost import XGBClassifier
 # declare parameters
-'''
-params = {
-            'objective':'binary:logistic',
-            'max_depth': 4,
-            'alpha': 10,
-            'learning_rate': 0.1,
-            'n_estimators':100
-        }
+
+params = { 'max_depth': 1,
+           'learning_rate': 0.03,
+           'n_estimators': 300,
+           'colsample_bytree': 1}
+
+#Find best parameters
+# Best parameters: {'colsample_bytree': 1, 'learning_rate': 0.03, 'max_depth': 1, 'n_estimators': 300}
 '''
 params = { 'max_depth': [1, 3, 6, 10],
            'learning_rate': [0.01, 0.03, 0.06, 0.1, 0.3, 0.5],
@@ -60,18 +60,18 @@ clf = GridSearchCV(estimator = xg2,
                    verbose=1)
 clf.fit(X_df, y_df)
 
-print("Best parameters:", clf.best_params_) # Best parameters: {'colsample_bytree': 1, 'learning_rate': 0.03, 'max_depth': 1, 'n_estimators': 300}
-
+print("Best parameters:", clf.best_params_)
+'''
 
 # instantiate the classifier 
-#xgb_clf = XGBClassifier(**params)
+xgb_clf = XGBClassifier(**params)
 # fit the classifier to the training data
-#xgb_clf.fit(X_train, y_train)
-'''
+xgb_clf.fit(X_train, y_train)
+
 from sklearn.metrics import accuracy_score
-y_pred = clf.predict(X_test)
+y_pred = xgb_clf.predict(X_test)
 print('XGBoost model accuracy score: {0:0.4f}'. format(accuracy_score(y_test, y_pred)))
-'''
+
 '''
 import xgboost as xgb
 xgb.plot_importance(xgb_clf)
