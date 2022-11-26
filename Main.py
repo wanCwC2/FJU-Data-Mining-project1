@@ -21,10 +21,10 @@ test = pd.read_csv('data/project1_test.csv')
 from scipy.stats import boxcox
 out = ['Alkaline_Phosphotase', 'Alamine_Aminotransferase', 'Aspartate_Aminotransferase'] 
 for i in out:
-    transform_data = data[i]**(1/3)
-    transform_data2 = test[i]**(1/3)
-    #transform_data, lam = boxcox(data[i])
-    #transform_data2, lam = boxcox(test[i])
+    #transform_data = data[i]**(1/3)
+    #transform_data2 = test[i]**(1/3)
+    transform_data, lam = boxcox(data[i])
+    transform_data2, lam = boxcox(test[i])
     for j in range(0, data.shape[0]):
         data.loc[j, i] = transform_data[j]
     for j in range(0, test.shape[0]):
@@ -73,15 +73,15 @@ xgb_params = {'max_depth': 1,
            'colsample_bytree': 1,
            'random_state': 408570344}
 
-dt_params = {'criterion': "gini",
+dt_params = {'criterion': "entropy",
            'splitter': "random",
-           'min_samples_leaf': 1,
-           'max_depth': 1,
+           'min_samples_leaf': 10,
+           'max_depth': 3,
            'random_state': 408570344}
 
-svm_params = {'C': 10.0, 
+svm_params = {'C': 1.0, 
               'loss': 'squared_hinge', 
-              'max_iter': 6000, 
+              'max_iter': 1000, 
               'penalty': 'l2',
               'random_state': 408570344}
 #弱學習器
