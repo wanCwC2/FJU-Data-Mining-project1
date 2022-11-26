@@ -8,33 +8,48 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestCentroid
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
+
+def data_standardization(df_input):
+    sc = StandardScaler()   
+    df=sc.fit_transform(df_input.iloc[:,0:10])
+    return df
+
 warnings.filterwarnings('ignore')
 
 #Read data
 data = pd.read_csv('data/project1_train.csv')
 test = pd.read_csv('data/project1_test.csv')
 
+data = data.drop(data[data['Albumin_and_Globulin_Ratio'].isnull()].index)
+
 #Revise Male, Female
 data.loc[data.Gender=='Male', 'Gender'] = 1
 data.loc[data.Gender=='Female', 'Gender'] = 0
 test.loc[test.Gender=='Male', 'Gender'] = 1
 test.loc[test.Gender=='Female', 'Gender'] = 0
-
+'''
 #Find analysis target
 X_df = pd.DataFrame(data, columns = ['Age', 'Gender', 'Total_Bilirubin', 'Direct_Bilirubin',
        'Alkaline_Phosphotase', 'Alamine_Aminotransferase',
        'Aspartate_Aminotransferase', 'Total_Protiens', 'Albumin',
        'Albumin_and_Globulin_Ratio'])
 y_df = pd.DataFrame(data, columns = ['Label'])
-
+'''
+#Standardization
+X_df = data_standardization(data)
+y_df = data['Label'].values
+'''
 #Delete nan
 y_df = y_df.drop(X_df[X_df['Albumin_and_Globulin_Ratio'].isnull()].index)
 X_df = X_df.drop(X_df[X_df['Albumin_and_Globulin_Ratio'].isnull()].index)
+'''
 
 #Dvide the data into validation and test sets
-X_train, X_valid, y_train, y_valid = train_test_split(X_df, y_df, train_size=0.6, random_state=0)
-X_valid, X_test, y_valid, y_test = train_test_split(X_valid, y_valid, train_size=0.5, random_state=0)
+X_train , X_test , y_train , y_test = train_test_split(X_df ,y_df , test_size=0.1 , random_state=408570344)
+#X_train, X_valid, y_train, y_valid = train_test_split(X_df, y_df, train_size=0.6, random_state=0)
+#X_valid, X_test, y_valid, y_test = train_test_split(X_valid, y_valid, train_size=0.5, random_state=0)
 
+'''
 #Standardization
 sc = StandardScaler()
 sc.fit(X_train)
@@ -46,6 +61,8 @@ X_test_std = sc.transform(X_test)
 X_train_std = pd.DataFrame(X_train_std, index=X_train.index, columns=X_train.columns)
 X_valid_std = pd.DataFrame(X_valid_std, index=X_valid.index, columns=X_valid.columns)
 X_test_std = pd.DataFrame(X_test_std, index=X_test.index, columns=X_test.columns)
+'''
+'''
 
 #Delete too big data
 #X_train_std.drop(X_train_std[X_train_std[:,5]>3].index) #pandas data, but change to array after standardizating
@@ -55,11 +72,12 @@ for i in range(0, X_train_std.shape[1]):
     X_train_std = X_train_std.drop(X_train_std[X_train_std.iloc[:,i]>2].index)
     y_valid = y_valid.drop(X_valid_std[X_valid_std.iloc[:,i]>2].index)
     X_valid_std = X_valid_std.drop(X_valid_std[X_valid_std.iloc[:,i]>2].index)
-
-sc_test = StandardScaler()
-sc_test.fit(test)
-test_std = sc_test.transform(test)
-test_std = pd.DataFrame(test_std, index=test.index, columns=test.columns)
+'''
+#sc_test = StandardScaler()
+#sc_test.fit(test)
+sc = StandardScaler() 
+test_std = sc.fit_transform(test)
+#test_std = pd.DataFrame(test_std, index=test.index, columns=test.columns)
 
 #XGBoost
 import xgboost as xgb
@@ -131,11 +149,11 @@ print('Correct rate using SVR: {:.5f}'.format(svrScore))
 from sklearn import svm
 # 建立 linearSvc 模型
 #polyModel=svm.SVC(kernel='poly', degree=3, gamma='auto', C=1)
-polyModel=svm.SVC(kernel='rbf', gamma=0.7, C=1)
+#polyModel=svm.SVC(kernel='rbf', gamma=0.7, C=1)
 # 使用訓練資料訓練模型
 max_pred = 0
-degree_max = 1
-C_max = 1
+degree_max = 5 #1
+C_max = 2 #1
 '''
 for i in range (1,11):
     for j in range (1, 11):
@@ -167,8 +185,8 @@ for i in range (1,10):
         rf_state = i
 '''
 max_pred = 0
-n_max = 100
-depth_max = 3
+n_max = 200 #100
+depth_max = 4 #3
 '''
 rfModel = RandomForestClassifier(n_estimators=200, max_depth=3, random_state = 408570344)
 for i in range (100, 2000, 200):
@@ -195,9 +213,9 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 #弱學習器
 estimators = [
-    ('xgb', xgb.XGBClassifier(colsample_bytree= 0.3, learning_rate=0.01, max_depth= 10, n_estimators=100)),
+    ('xgb', xgb.XGBClassifier(colsample_bytree= 0.5, learning_rate=0.1, max_depth= 10, n_estimators=200)),
     ('svc', svm.SVC(kernel='rbf', degree=degree_max, C=C_max)),
-    ('rf', RandomForestClassifier(n_estimators=n_max, max_depth=depth_max, min_samples_split=3, random_state = 408570344)),
+    ('rf', RandomForestClassifier(n_estimators=n_max, max_depth=depth_max, min_samples_split=2, random_state = 408570344)),
     ('dt', DecisionTreeClassifier()),
     ('knn', KNeighborsClassifier())
 ]
@@ -210,8 +228,8 @@ stackModel = StackingClassifier(
 )
 '''
 stackModel = StackingClassifier(estimators=estimators, final_estimator=LogisticRegression())
-stackModel.fit(X_train_std, y_train)
-stackScore = stackModel.score(X_test_std, y_test)
+stackModel.fit(X_train, y_train)
+stackScore = stackModel.score(X_test, y_test)
 print("Correct rate after Stacking: ", stackScore)
 
 
