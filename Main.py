@@ -14,7 +14,23 @@ warnings.filterwarnings('ignore')
 data = pd.read_csv('data/project1_train.csv')
 test = pd.read_csv('data/project1_test.csv')
 #data = data.drop([29, 60, 297, 347])
-des = data.describe()
+#des = data.describe()
+#des2 = test.describe()
+
+#Outliers
+from scipy.stats import boxcox
+out = ['Alkaline_Phosphotase', 'Alamine_Aminotransferase', 'Aspartate_Aminotransferase'] 
+for i in out:
+    transform_data = data[i]**(1/3)
+    transform_data2 = test[i]**(1/3)
+    #transform_data, lam = boxcox(data[i])
+    #transform_data2, lam = boxcox(test[i])
+    for j in range(0, data.shape[0]):
+        data.loc[j, i] = transform_data[j]
+    for j in range(0, test.shape[0]):
+        test.loc[j, i] = transform_data2[j]
+#des = data.describe()
+#des2 = test.describe()
 
 #Revise Male, Female
 data.loc[data.Gender=='Male', 'Gender'] = 1
@@ -37,11 +53,13 @@ test = data_standardization(test)
 
 #Dvide the data into validation and test sets
 X_train , X_test , y_train , y_test = train_test_split(X_df ,y_df , test_size=0.3 , random_state=408570344)
+
 '''
 #crossvalidator
 from sklearn.model_selection import KFold
 KFold(n_splits=2, random_state=408570344, shuffle=False)
 '''
+
 #Stacking
 from sklearn.ensemble import StackingClassifier
 from sklearn.linear_model import LogisticRegression
