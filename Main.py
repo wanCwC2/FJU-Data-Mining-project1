@@ -47,7 +47,7 @@ X_test_std = sc.transform(X_test)
 X_train_std = pd.DataFrame(X_train_std, index=X_train.index, columns=X_train.columns)
 X_valid_std = pd.DataFrame(X_valid_std, index=X_valid.index, columns=X_valid.columns)
 X_test_std = pd.DataFrame(X_test_std, index=X_test.index, columns=X_test.columns)
-'''
+
 #Delete too big data
 #X_train_std.drop(X_train_std[X_train_std[:,5]>3].index) #pandas data, but change to array after standardizating
 for i in range(0, X_train_std.shape[1]):
@@ -56,7 +56,7 @@ for i in range(0, X_train_std.shape[1]):
     X_train_std = X_train_std.drop(X_train_std[X_train_std.iloc[:,i]>2].index)
     y_valid = y_valid.drop(X_valid_std[X_valid_std.iloc[:,i]>2].index)
     X_valid_std = X_valid_std.drop(X_valid_std[X_valid_std.iloc[:,i]>2].index)
-'''
+
 sc_test = StandardScaler()
 sc_test.fit(test)
 test_std = sc_test.transform(test)
@@ -76,12 +76,31 @@ xgbModel_cv.fit(X_train_std, y_train.values.ravel())
 xgbScore = xgbModel_cv.score(X_test_std, y_test.values.ravel())
 print('Correct rate using XGBoost: {:.5f}'.format(xgbScore))
 '''
+'''
 xgbModel_Classifier = xgb.XGBClassifier(n_estimators = 50, max_depth = 6)
 xgbModel_Classifier.fit(X_train_std, y_train.values.ravel())
 xgbScore_Classifier = xgbModel_Classifier.score(X_test_std, y_test.values.ravel())
 print('Correct rate using XGBoost: {:.5f}'.format(xgbScore_Classifier))
+'''
+'''
+params = { 'max_depth': [3,6,10],
+           'learning_rate': [0.01, 0.05, 0.1],
+           'n_estimators': [100, 500, 1000],
+           'colsample_bytree': [0.3, 0.7]}
 
+xg2 = xgb.XGBClassifier(random_state=408570344)
+clf = GridSearchCV(estimator = xg2,
+                   param_grid = params,
+                   scoring = 'neg_mean_squared_error',
+                   verbose=1)
+clf.fit(X_train_std, y_train)
 
+print("Best parameters:", clf.best_params_)
+'''
+xg3 = xgb.XGBClassifier(colsample_bytree= 0.3, learning_rate=0.01, max_depth= 10, n_estimators=100)
+xg3=xg3.fit(X_train_std, y_train)
+xgbScore_Classifier = xg3.score(X_test_std, y_test.values.ravel())
+print('Correct rate using XGBoost: {:.5f}'.format(xgbScore_Classifier))
 '''
 #SVR
 from sklearn.svm import SVR
@@ -144,5 +163,5 @@ print("Correct rate after Stacking: ", stackScore)
 #Output predict data
 result = pd.DataFrame([], columns=['Id', 'Category'])
 result['Id'] = [f'{i:03d}' for i in range(len(test))]
-result['Category'] = xgbModel_Classifier.predict(test_std).astype(int)
+result['Category'] = xg3.predict(test_std).astype(int)
 result.to_csv("data/predict.csv", index = False)
