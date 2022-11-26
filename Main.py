@@ -7,7 +7,6 @@ from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestCentroid
 from sklearn.preprocessing import StandardScaler
-from sklearn.neighbors import KNeighborsRegressor
 from sklearn.neural_network import MLPClassifier
 warnings.filterwarnings('ignore')
 
@@ -127,7 +126,7 @@ svrModel.fit(X_train_std, y_train)
 svrScore = svrModel.score(X_test_std, y_test)
 print('Correct rate using SVR: {:.5f}'.format(svrScore))
 '''
-'''
+
 #SVM
 from sklearn import svm
 # 建立 linearSvc 模型
@@ -135,8 +134,9 @@ from sklearn import svm
 polyModel=svm.SVC(kernel='rbf', gamma=0.7, C=1)
 # 使用訓練資料訓練模型
 max_pred = 0
-degree_max = 0
-C_max = 0
+degree_max = 1
+C_max = 1
+'''
 for i in range (1,11):
     for j in range (1, 11):
         #svm.SVC(kernel='poly', degree=i, gamma='auto', C=j)
@@ -180,6 +180,7 @@ for i in range (100, 2000, 200):
             depth_max = j
             n_max = i
 '''
+'''
 #rfModel = RandomForestClassifier(n_estimators=n_max, max_depth=depth_max, random_state = 408570344)
 rfModel = RandomForestClassifier(n_estimators=n_max, max_depth=depth_max, min_samples_split=3, random_state = 408570344)
 rfModel.fit(X_train_std, y_train)
@@ -187,27 +188,35 @@ rfScore = round(rfModel.score(X_test_std, y_test),5)
 print("Correct rate using Random Forest: ", rfScore)
 '''
 #Stacking
-from sklearn.ensemble import StackingRegressor
-from sklearn.neural_network import MLPRegressor
+from sklearn.ensemble import StackingClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
 #弱學習器
 estimators = [
-    ('xgb', GridSearchCV(xgbModel, parameters_to_search, cv=5)),
-    ('svr', make_pipeline(StandardScaler(), SVR(C = svr_c, epsilon = svr_epsilon))),
-    ('rf', RandomForestRegressor(random_state = 408570344))
+    ('xgb', xgb.XGBClassifier(colsample_bytree= 0.3, learning_rate=0.01, max_depth= 10, n_estimators=100)),
+    ('svc', svm.SVC(kernel='rbf', degree=degree_max, C=C_max)),
+    ('rf', RandomForestClassifier(n_estimators=n_max, max_depth=depth_max, min_samples_split=3, random_state = 408570344)),
+    ('dt', DecisionTreeClassifier()),
+    ('knn', KNeighborsClassifier())
 ]
 #Stacking將不同模型優缺點進行加權，讓模型更好。
 #final_estimator：集合所有弱學習器訓練出最終預測模型。預設為LogisticRegression。
-stackModel = StackingRegressor(
-    estimators=estimators, final_estimator= MLPRegressor(activation = "relu", alpha = 0.1, hidden_layer_sizes = (3),
-                            learning_rate = "constant", max_iter = 200, random_state = 100)
-)
-stackModel.fit(X_train_std, y_train.values.ravel())
-stackScore = stackModel.score(X_test_std, y_test.values.ravel())
-print("Correct rate after Stacking: ", stackScore)
 '''
+stackModel = StackingClassifier(
+    estimators=estimators, final_estimator= MLPClassifier(activation = "relu", alpha = 1, hidden_layer_sizes = (3,3),
+                            learning_rate = "constant", max_iter = 20, random_state = 408570344)
+)
+'''
+stackModel = StackingClassifier(estimators=estimators, final_estimator=LogisticRegression())
+stackModel.fit(X_train_std, y_train)
+stackScore = stackModel.score(X_test_std, y_test)
+print("Correct rate after Stacking: ", stackScore)
+
 
 #Output predict data
 result = pd.DataFrame([], columns=['Id', 'Category'])
 result['Id'] = [f'{i:03d}' for i in range(len(test))]
-result['Category'] = rfModel.predict(test_std).astype(int)
+result['Category'] = stackModel.predict(test_std).astype(int)
 result.to_csv("data/predict.csv", index = False)
