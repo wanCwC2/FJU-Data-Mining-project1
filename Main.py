@@ -97,10 +97,12 @@ clf.fit(X_train_std, y_train)
 
 print("Best parameters:", clf.best_params_)
 '''
+'''
 xg3 = xgb.XGBClassifier(colsample_bytree= 0.3, learning_rate=0.01, max_depth= 10, n_estimators=100)
 xg3=xg3.fit(X_train_std, y_train)
-xgbScore_Classifier = xg3.score(X_test_std, y_test.values.ravel())
+xgbScore_Classifier = xg3.score(X_test_std, y_test)
 print('Correct rate using XGBoost: {:.5f}'.format(xgbScore_Classifier))
+'''
 '''
 #SVR
 from sklearn.svm import SVR
@@ -111,35 +113,79 @@ svr_c = 2 #最適合用在此的SVR參數
 svr_epsilon = 0.5 #最適合用在此的SVR參數
 #rng = np.random.RandomState(0)
 svrModel = make_pipeline(StandardScaler(), SVR(C=svr_c, epsilon=svr_epsilon))
-svrModel.fit(X_train_std, y_train.values.ravel())
+svrModel.fit(X_train_std, y_train)
 for i in range(1, 5):
     for j in range(0, 5):
         svrModel = make_pipeline(StandardScaler(), SVR(C=i, epsilon = j/10))
         svrModel.fit(X_train_std, y_train.values.ravel())
-        if svr_maxRate < svrModel.score(X_valid_std, y_valid.values.ravel()):
-            svr_maxRate = svrModel.score(X_valid_std, y_valid.values.ravel())
+        if svr_maxRate < svrModel.score(X_valid_std, y_valid):
+            svr_maxRate = svrModel.score(X_valid_std, y_valid)
             svr_c = i
             svr_epsilon = j/10
 svrModel = make_pipeline(StandardScaler(), SVR(C = svr_c, epsilon = svr_epsilon))
-svrModel.fit(X_train_std, y_train.values.ravel())
-svrScore = svrModel.score(X_test_std, y_test.values.ravel())
+svrModel.fit(X_train_std, y_train)
+svrScore = svrModel.score(X_test_std, y_test)
 print('Correct rate using SVR: {:.5f}'.format(svrScore))
+'''
+'''
+#SVM
+from sklearn import svm
+# 建立 linearSvc 模型
+#polyModel=svm.SVC(kernel='poly', degree=3, gamma='auto', C=1)
+polyModel=svm.SVC(kernel='rbf', gamma=0.7, C=1)
+# 使用訓練資料訓練模型
+max_pred = 0
+degree_max = 0
+C_max = 0
+for i in range (1,11):
+    for j in range (1, 11):
+        #svm.SVC(kernel='poly', degree=i, gamma='auto', C=j)
+        svm.SVC(kernel='rbf', degree=i, C=j)
+        polyModel.fit(X_train_std, y_train)
+        if polyModel.score(X_valid_std, y_valid) > max_pred:
+            max_pred = polyModel.score(X_valid_std, y_valid)
+            degree_max = i
+            C_max = j
+#print(degree_max, C_max)
+#svm.SVC(kernel='poly', degree=degree_max, gamma='auto', C=C_max)
+svm.SVC(kernel='rbf', degree=degree_max, C=C_max)
+polyModel.fit(X_train_std, y_train)
+svmScore = polyModel.score(X_test_std, y_test)
+print('Correct rate using SVR: {:.5f}'.format(svmScore))
+'''
 
 # Random Forest
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier
+'''
 rf_maxRate = 0
 rf_state = 0
 for i in range (1,10):
-    rfModel = RandomForestRegressor(random_state = i)
+    rfModel = RandomForestClassifier(random_state = i)
     rfModel.fit(X_train_std, y_train.values.ravel())
     if rf_maxRate < rfModel.score(X_valid_std, y_valid.values.ravel()):
         rf_maxRate = rfModel.score(X_valid_std, y_valid.values.ravel())
         rf_state = i
-rfModel = RandomForestRegressor(random_state = 408570344)
-rfModel.fit(X_train_std, y_train.values.ravel())
-rfScore = round(rfModel.score(X_test_std, y_test.values.ravel()),5)
+'''
+max_pred = 0
+n_max = 100
+depth_max = 3
+'''
+rfModel = RandomForestClassifier(n_estimators=200, max_depth=3, random_state = 408570344)
+for i in range (100, 2000, 200):
+    for j in range(2, 10):
+        rfModel = RandomForestClassifier(n_estimators=i, max_depth=j, random_state = 408570344)
+        rfModel.fit(X_train_std, y_train)
+        if rfModel.score(X_valid_std, y_valid) > max_pred:
+            max_pred = rfModel.score(X_valid_std, y_valid)
+            depth_max = j
+            n_max = i
+'''
+#rfModel = RandomForestClassifier(n_estimators=n_max, max_depth=depth_max, random_state = 408570344)
+rfModel = RandomForestClassifier(n_estimators=n_max, max_depth=depth_max, min_samples_split=3, random_state = 408570344)
+rfModel.fit(X_train_std, y_train)
+rfScore = round(rfModel.score(X_test_std, y_test),5)
 print("Correct rate using Random Forest: ", rfScore)
-
+'''
 #Stacking
 from sklearn.ensemble import StackingRegressor
 from sklearn.neural_network import MLPRegressor
@@ -163,5 +209,5 @@ print("Correct rate after Stacking: ", stackScore)
 #Output predict data
 result = pd.DataFrame([], columns=['Id', 'Category'])
 result['Id'] = [f'{i:03d}' for i in range(len(test))]
-result['Category'] = xg3.predict(test_std).astype(int)
+result['Category'] = rfModel.predict(test_std).astype(int)
 result.to_csv("data/predict.csv", index = False)
