@@ -20,13 +20,21 @@ warnings.filterwarnings('ignore')
 data = pd.read_csv('data/project1_train.csv')
 test = pd.read_csv('data/project1_test.csv')
 
-data = data.drop(data[data['Albumin_and_Globulin_Ratio'].isnull()].index)
-
 #Revise Male, Female
 data.loc[data.Gender=='Male', 'Gender'] = 1
 data.loc[data.Gender=='Female', 'Gender'] = 0
 test.loc[test.Gender=='Male', 'Gender'] = 1
 test.loc[test.Gender=='Female', 'Gender'] = 0
+
+#data = data.drop(data[data['Albumin_and_Globulin_Ratio'].isnull()].index)
+from sklearn.impute import SimpleImputer
+# 建立以平均值填補缺損值的實體
+imp = SimpleImputer(strategy='most_frequent')  #mean, median, most_frequent
+# 填補缺損值
+imp.fit(data)
+data2 = imp.transform(data)
+data = pd.DataFrame(data2, index = data.index, columns = data.columns)
+
 '''
 #Find analysis target
 X_df = pd.DataFrame(data, columns = ['Age', 'Gender', 'Total_Bilirubin', 'Direct_Bilirubin',
@@ -37,7 +45,7 @@ y_df = pd.DataFrame(data, columns = ['Label'])
 '''
 #Standardization
 X_df = data_standardization(data)
-y_df = data['Label'].values
+y_df = data['Label'].astype('int')
 '''
 #Delete nan
 y_df = y_df.drop(X_df[X_df['Albumin_and_Globulin_Ratio'].isnull()].index)
@@ -45,7 +53,7 @@ X_df = X_df.drop(X_df[X_df['Albumin_and_Globulin_Ratio'].isnull()].index)
 '''
 
 #Dvide the data into validation and test sets
-X_train , X_test , y_train , y_test = train_test_split(X_df ,y_df , test_size=0.1 , random_state=408570344)
+X_train , X_val , y_train , y_val = train_test_split(X_df ,y_df , test_size=0.3 , random_state=408570344)
 #X_train, X_valid, y_train, y_valid = train_test_split(X_df, y_df, train_size=0.6, random_state=0)
 #X_valid, X_test, y_valid, y_test = train_test_split(X_valid, y_valid, train_size=0.5, random_state=0)
 
@@ -205,6 +213,43 @@ rfModel.fit(X_train_std, y_train)
 rfScore = round(rfModel.score(X_test_std, y_test),5)
 print("Correct rate using Random Forest: ", rfScore)
 '''
+from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_val_score
+'''
+model = MLPClassifier(
+  hidden_layer_sizes=(10),
+  max_iter=10,
+  solver="adam",
+  random_state=100002     #random_state請改成你的學號（純數字、不加B）
+)
+model.fit(X_train, y_train)
+print("Training set score: %f" % model.score(X_train, y_train))
+print("Validation set score: %f" % model.score(X_val, y_val))
+kfold = KFold(n_splits=10, shuffle=True, random_state=100002)
+score = cross_val_score(model, X_train, y_train, cv=kfold, scoring='accuracy').mean()
+param_grid = [ {'hidden_layer_sizes':[(10,), (20,), (50,), (5,5), (10,10)], 
+          'max_iter':[5, 10, 20, 50],
+          'solver': ['sgd', 'adam'],
+          }]
+
+MLP_kfold = KFold(n_splits=10, shuffle=True, random_state=100002)
+grid = GridSearchCV(MLPClassifier(), param_grid, cv=MLP_kfold, scoring='accuracy')
+grid.fit(X_train, y_train)
+print(grid.best_params_)
+print(grid.best_estimator_)
+#{'hidden_layer_sizes': (50,), 'max_iter': 50, 'solver': 'sgd'}
+#MLPClassifier(hidden_layer_sizes=(50,), max_iter=50, solver='sgd')
+
+MLP_tuned = MLPClassifier(
+  hidden_layer_sizes=(50,),
+  max_iter=50,
+  solver="sgd",
+  random_state=408570344     #random_state請改成你的學號（純數字、不加B）
+)
+after_GridSearch_score = cross_val_score(MLP_tuned, X_train, y_train, cv=MLP_kfold, scoring='accuracy').mean()
+print("After tuned accuracy: {}".format(after_GridSearch_score))
+'''
 #Stacking
 from sklearn.ensemble import StackingClassifier
 from sklearn.neural_network import MLPClassifier
@@ -216,16 +261,21 @@ from xgboost import XGBClassifier
 
 xgb_params = { 'max_depth': 1,
            'learning_rate': 0.03,
-           'n_estimators': 300,
-           'colsample_bytree': 1,
+           'n_estimators': 200,
+           'colsample_bytree': 0.3,
            'random_state': 408570344}
+mlp_params = {'hidden_layer_sizes': (50,),
+              'max_iter': 50,
+              'solver': "sgd",
+              'random_state': 408570344 }
 
 estimators = [
     ('xgb', XGBClassifier(**xgb_params)),
     ('svc', svm.SVC(kernel='rbf', degree=degree_max, C=C_max, random_state=408570344)),
     ('rf', RandomForestClassifier(n_estimators=n_max, max_depth=depth_max, min_samples_split=2, random_state = 408570344)),
     ('dt', DecisionTreeClassifier(max_depth=depth_max, min_samples_split=2, random_state=408570344)),
-    ('knn', KNeighborsClassifier(n_neighbors=2))
+    ('knn', KNeighborsClassifier(n_neighbors=2)),
+    ('mlp', MLPClassifier(**mlp_params))
 ]
 #Stacking將不同模型優缺點進行加權，讓模型更好。
 #final_estimator：集合所有弱學習器訓練出最終預測模型。預設為LogisticRegression。
@@ -235,13 +285,12 @@ stackModel = StackingClassifier(
                             learning_rate = "constant", max_iter = 20, random_state = 408570344)
 )
 '''
-stackModel = StackingClassifier(estimators=estimators,
-                                final_estimator=LogisticRegression(),
+stackModel = StackingClassifier(estimators = estimators,
+#                                final_estimator = ,
                                 stack_method = 'predict')
 stackModel.fit(X_train, y_train)
-stackScore = stackModel.score(X_test, y_test)
+stackScore = stackModel.score(X_val, y_val)
 print("Correct rate after Stacking: ", stackScore)
-
 
 #Output predict data
 result = pd.DataFrame([], columns=['Id', 'Category'])
