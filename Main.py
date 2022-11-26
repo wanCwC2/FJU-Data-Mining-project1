@@ -211,9 +211,17 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from xgboost import XGBClassifier
 #弱學習器
+
+xgb_params = { 'max_depth': 1,
+           'learning_rate': 0.03,
+           'n_estimators': 300,
+           'colsample_bytree': 1,
+           'random_state': 408570344}
+
 estimators = [
-    ('xgb', xgb.XGBClassifier(colsample_bytree= 0.5, learning_rate=0.1, max_depth= 10, n_estimators=200, random_state=408570344)),
+    ('xgb', XGBClassifier(**xgb_params)),
     ('svc', svm.SVC(kernel='rbf', degree=degree_max, C=C_max, random_state=408570344)),
     ('rf', RandomForestClassifier(n_estimators=n_max, max_depth=depth_max, min_samples_split=2, random_state = 408570344)),
     ('dt', DecisionTreeClassifier(max_depth=depth_max, min_samples_split=2, random_state=408570344)),
