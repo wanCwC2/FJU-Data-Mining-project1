@@ -14,6 +14,7 @@ warnings.filterwarnings('ignore')
 data = pd.read_csv('data/project1_train.csv')
 test = pd.read_csv('data/project1_test.csv')
 #data = data.drop([29, 60, 297, 347])
+des = data.describe()
 
 #Revise Male, Female
 data.loc[data.Gender=='Male', 'Gender'] = 1
@@ -36,7 +37,11 @@ test = data_standardization(test)
 
 #Dvide the data into validation and test sets
 X_train , X_test , y_train , y_test = train_test_split(X_df ,y_df , test_size=0.3 , random_state=408570344)
-
+'''
+#crossvalidator
+from sklearn.model_selection import KFold
+KFold(n_splits=2, random_state=408570344, shuffle=False)
+'''
 #Stacking
 from sklearn.ensemble import StackingClassifier
 from sklearn.linear_model import LogisticRegression
@@ -44,16 +49,18 @@ from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier
 from sklearn.svm import LinearSVC
 
-xgb_params = { 'max_depth': 1,
+xgb_params = {'max_depth': 1,
            'learning_rate': 0.01,
            'n_estimators': 300,
            'colsample_bytree': 1,
            'random_state': 408570344}
-dt_params = { 'criterion': "gini",
+
+dt_params = {'criterion': "gini",
            'splitter': "random",
            'min_samples_leaf': 1,
            'max_depth': 1,
            'random_state': 408570344}
+
 svm_params = {'C': 10.0, 
               'loss': 'squared_hinge', 
               'max_iter': 6000, 
@@ -67,14 +74,11 @@ estimators = [
 ]
 #Stacking將不同模型優缺點進行加權，讓模型更好。
 #final_estimator：集合所有弱學習器訓練出最終預測模型。預設為LogisticRegression。
-'''
-stackModel = StackingClassifier(
-    estimators=estimators, final_estimator= MLPClassifier(activation = "relu", alpha = 1, hidden_layer_sizes = (3,3),
-                            learning_rate = "constant", max_iter = 20, random_state = 408570344)
-)
-'''
 stackModel = StackingClassifier(estimators = estimators,
-                                final_estimator = LogisticRegression())
+                                final_estimator = LogisticRegression(),
+                                stack_method = 'predict',
+                                cv = 10, #crossvalidator
+                                )
 stackModel.fit(X_train, y_train)
 stackScore = stackModel.score(X_test, y_test)
 print("Correct rate after Stacking: ", stackScore)
