@@ -54,7 +54,7 @@ X_df = X_df.drop(X_df[X_df['Albumin_and_Globulin_Ratio'].isnull()].index)
 '''
 
 #Dvide the data into validation and test sets
-X_train , X_val , y_train , y_val = train_test_split(X_df ,y_df , test_size=0.3 , random_state=408570344)
+X_train , X_test , y_train , y_test = train_test_split(X_df ,y_df , test_size=0.3 , random_state=408570344)
 #X_train, X_valid, y_train, y_valid = train_test_split(X_df, y_df, train_size=0.6, random_state=0)
 #X_valid, X_test, y_valid, y_test = train_test_split(X_valid, y_valid, train_size=0.5, random_state=0)
 
@@ -261,15 +261,26 @@ from xgboost import XGBClassifier
 from sklearn.naive_bayes import GaussianNB          # 高斯貝氏分類器 GaussianNB
 from sklearn.naive_bayes import MultinomialNB     # 多項式貝氏分類器 MultinomialNB
 from sklearn.naive_bayes import BernoulliNB         # 伯努力貝氏分類器 Ber
+from sklearn.svm import LinearSVC
 
 xgb_params = { 'max_depth': 1,
            'learning_rate': 0.01,
-           'n_estimators': 100,
-           'colsample_bytree': 0.1,
+           'n_estimators': 300,
+           'colsample_bytree': 1,
            'random_state': 408570344}
 mlp_params = {'hidden_layer_sizes': (50,),
               'max_iter': 50,
               'solver': "sgd",
+              'random_state': 408570344}
+dt_params = { 'criterion': "gini",
+           'splitter': "random",
+           'min_samples_leaf': 1,
+           'max_depth': 1,
+           'random_state': 408570344}
+svm_params = {'C': 10.0, 
+              'loss': 'squared_hinge', 
+              'max_iter': 6000, 
+              'penalty': 'l2',
               'random_state': 408570344}
 #弱學習器
 '''
@@ -284,10 +295,10 @@ estimators = [
 '''
 estimators = [
     ('xgb', XGBClassifier(**xgb_params)),
-    ('svc', svm.SVC(random_state=408570344)),
-    ('dt', DecisionTreeClassifier(max_depth=1, splitter='random', random_state=408570344)),
-    ('knn', KNeighborsClassifier()),
-    ('nb', GaussianNB())
+    ('svc', LinearSVC(**svm_params)),
+    ('dt', DecisionTreeClassifier(**dt_params)),
+#    ('knn', KNeighborsClassifier()),
+#    ('nb', GaussianNB())
 ]
 #Stacking將不同模型優缺點進行加權，讓模型更好。
 #final_estimator：集合所有弱學習器訓練出最終預測模型。預設為LogisticRegression。
@@ -300,7 +311,7 @@ stackModel = StackingClassifier(
 stackModel = StackingClassifier(estimators = estimators,
                                 final_estimator = LogisticRegression())
 stackModel.fit(X_train, y_train)
-stackScore = stackModel.score(X_val, y_val)
+stackScore = stackModel.score(X_test, y_test)
 print("Correct rate after Stacking: ", stackScore)
 
 #Output predict data
