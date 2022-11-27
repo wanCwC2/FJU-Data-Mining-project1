@@ -67,7 +67,7 @@ params = { 'criterion': ["gini", "entropy", "log_loss"],
            'min_samples_leaf': [1, 3, 6, 10],
            'max_depth': [1, 3, 6, 10],
            'n_estimators': [100, 500, 1000]}
-
+'''
 from sklearn.model_selection import GridSearchCV
 model = RandomForestClassifier()
 clf = GridSearchCV(estimator = model,
@@ -82,21 +82,22 @@ print(clf.best_estimator_)
 #Best parameters: {'criterion': 'gini', 'max_depth': 10, 'min_samples_leaf': 3, 'n_estimators': 500}
 #RandomForestClassifier(max_depth=10, min_samples_leaf=3, n_estimators=500)
 '''
+'''
 dt_params = { 'criterion': "gini",
            'splitter': "random",
            'min_samples_leaf': 1,
            'max_depth': 1}
 '''
-model = clf.best_estimator_
+#model = clf.best_estimator_
+model = RandomForestClassifier(max_depth=10, min_samples_leaf=3, n_estimators=500)
 model.fit(X_train, y_train)
 
 from sklearn.metrics import accuracy_score
 y_pred = model.predict(X_test)
-print('XGBoost model accuracy score: {0:0.4f}'. format(accuracy_score(y_test, y_pred))) #0.6950
-'''
+print('XGBoost model accuracy score: {0:0.4f}'. format(accuracy_score(y_test, y_pred))) #0.6809
+
 #Output predict data
 result = pd.DataFrame([], columns=['Id', 'Category'])
 result['Id'] = [f'{i:03d}' for i in range(len(test))]
 result['Category'] = model.predict(test).astype(int)
-result.to_csv("data/predict.csv", index = False) #0.73913
-'''
+result.to_csv("data/predict.csv", index = False) #0.69565

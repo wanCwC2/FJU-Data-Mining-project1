@@ -38,6 +38,10 @@ data.loc[data.Gender=='Female', 'Gender'] = 0
 test.loc[test.Gender=='Male', 'Gender'] = 1
 test.loc[test.Gender=='Female', 'Gender'] = 0
 
+#from sklearn import preprocessing
+#lbl = preprocessing.LabelEncoder()
+#test['Gender'] = lbl.fit_transform(test['Gender'].astype(int))
+
 from sklearn.impute import SimpleImputer
 # 建立以平均值填補缺損值的實體
 imp = SimpleImputer(strategy='most_frequent')  #mean, median, most_frequent
@@ -50,6 +54,9 @@ data = pd.DataFrame(data2, index = data.index, columns = data.columns)
 X_df = data_standardization(data.iloc[:,0:10])
 y_df = data['Label'].astype('int')
 test = data_standardization(test)
+
+#X_df = pd.DataFrame(X_df, columns = data.columns[0:10])
+#y_df = pd.DataFrame(y_df)
 
 #Dvide the data into validation and test sets
 X_train , X_test , y_train , y_test = train_test_split(X_df ,y_df , test_size=0.3 , random_state=408570344)
@@ -102,10 +109,11 @@ stackModel = StackingClassifier(estimators = estimators,
                                 stack_method = 'predict',
                                 cv = 10, #crossvalidator
                                 )
+'''
 stackModel.fit(X_train, y_train)
 stackScore = stackModel.score(X_test, y_test)
 print("Correct rate after Stacking: ", stackScore)
-
+'''
 #Output predict data
 stackModel.fit(X_df, y_df)
 result = pd.DataFrame([], columns=['Id', 'Category'])
