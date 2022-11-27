@@ -60,55 +60,43 @@ from sklearn.model_selection import KFold
 KFold(n_splits=2, random_state=408570344, shuffle=False)
 '''
 
-#Stacking
-from sklearn.ensemble import StackingClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
+#Random Forest
 from sklearn.ensemble import RandomForestClassifier
-from xgboost import XGBClassifier
-from sklearn.svm import LinearSVC
+params = { 'criterion': ["gini", "entropy", "log_loss"],
+#           'splitter': ["best", "random"],
+           'min_samples_leaf': [1, 3, 6, 10],
+           'max_depth': [1, 3, 6, 10],
+           'n_estimators': [100, 500, 1000]}
 
-xgb_params = {'max_depth': 1,
-           'learning_rate': 0.01,
-           'n_estimators': 300,
-           'colsample_bytree': 1,
-           'random_state': 408570344}
+from sklearn.model_selection import GridSearchCV
+model = RandomForestClassifier()
+clf = GridSearchCV(estimator = model,
+                   param_grid = params,
+                   scoring = 'neg_mean_squared_error',
+                   verbose = 1,
+                   cv = 10)
+clf.fit(X_train, y_train)
 
-dt_params = {'criterion': "entropy",
+print("Best parameters:", clf.best_params_)
+print(clf.best_estimator_)
+#Best parameters: {'criterion': 'gini', 'max_depth': 10, 'min_samples_leaf': 3, 'n_estimators': 500}
+#RandomForestClassifier(max_depth=10, min_samples_leaf=3, n_estimators=500)
+'''
+dt_params = { 'criterion': "gini",
            'splitter': "random",
-           'min_samples_leaf': 10,
-           'max_depth': 3,
-           'random_state': 408570344}
+           'min_samples_leaf': 1,
+           'max_depth': 1}
+'''
+model = clf.best_estimator_
+model.fit(X_train, y_train)
 
-svm_params = {'C': 1.0, 
-              'loss': 'squared_hinge', 
-              'max_iter': 1000, 
-              'penalty': 'l2',
-              'random_state': 408570344}
-rf_params = {'criterion': 'gini',
-             'max_depth': 10,
-             'min_samples_leaf': 3,
-             'n_estimators': 500}
-#弱學習器
-estimators = [
-    ('xgb', XGBClassifier(**xgb_params)),
-    ('svc', LinearSVC(**svm_params)),
-    ('rf', RandomForestClassifier(**rf_params)),
-]
-#Stacking將不同模型優缺點進行加權，讓模型更好。
-#final_estimator：集合所有弱學習器訓練出最終預測模型。預設為LogisticRegression。
-stackModel = StackingClassifier(estimators = estimators,
-#                                final_estimator = LogisticRegression(),
-                                stack_method = 'predict',
-                                cv = 10, #crossvalidator
-                                )
-stackModel.fit(X_train, y_train)
-stackScore = stackModel.score(X_test, y_test)
-print("Correct rate after Stacking: ", stackScore)
-
+from sklearn.metrics import accuracy_score
+y_pred = model.predict(X_test)
+print('XGBoost model accuracy score: {0:0.4f}'. format(accuracy_score(y_test, y_pred))) #0.6950
+'''
 #Output predict data
-stackModel.fit(X_df, y_df)
 result = pd.DataFrame([], columns=['Id', 'Category'])
 result['Id'] = [f'{i:03d}' for i in range(len(test))]
-result['Category'] = stackModel.predict(test).astype(int)
-result.to_csv("data/predict.csv", index = False)
+result['Category'] = model.predict(test).astype(int)
+result.to_csv("data/predict.csv", index = False) #0.73913
+'''
