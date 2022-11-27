@@ -13,30 +13,26 @@ warnings.filterwarnings('ignore')
 #Read data
 data = pd.read_csv('data/project1_train.csv')
 test = pd.read_csv('data/project1_test.csv')
-#data = data.drop([29, 60, 297, 347])
-#des = data.describe()
-#des2 = test.describe()
-
-#Outliers
-from scipy.stats import boxcox
-out = ['Alkaline_Phosphotase', 'Alamine_Aminotransferase', 'Aspartate_Aminotransferase'] 
-for i in out:
-    transform_data = data[i]**(1/3)
-    transform_data2 = test[i]**(1/3)
-    #transform_data, lam = boxcox(data[i])
-    #transform_data2, lam = boxcox(test[i])
-    for j in range(0, data.shape[0]):
-        data.loc[j, i] = transform_data[j]
-    for j in range(0, test.shape[0]):
-        test.loc[j, i] = transform_data2[j]
-#des = data.describe()
-#des2 = test.describe()
 
 #Revise Male, Female
 data.loc[data.Gender=='Male', 'Gender'] = 1
 data.loc[data.Gender=='Female', 'Gender'] = 0
 test.loc[test.Gender=='Male', 'Gender'] = 1
 test.loc[test.Gender=='Female', 'Gender'] = 0
+
+#Outliers
+from scipy.stats import boxcox
+out = ['Age', 'Gender', 'Total_Bilirubin', 'Direct_Bilirubin',
+       'Alkaline_Phosphotase', 'Alamine_Aminotransferase',
+       'Aspartate_Aminotransferase', 'Total_Protiens', 'Albumin',
+       'Albumin_and_Globulin_Ratio'] 
+for i in out:
+    transform_data = data[i]**(1/3)
+    transform_data2 = test[i]**(1/3)
+    for j in range(0, data.shape[0]):
+        data.loc[j, i] = transform_data[j]
+    for j in range(0, test.shape[0]):
+        test.loc[j, i] = transform_data2[j]
 
 from sklearn.impute import SimpleImputer
 # 建立以平均值填補缺損值的實體
@@ -52,47 +48,60 @@ y_df = data['Label'].astype('int')
 test = data_standardization(test)
 
 #Dvide the data into validation and test sets
-X_train , X_test , y_train , y_test = train_test_split(X_df ,y_df , test_size=0.3 , random_state=408570344)
+X_train , X_test , y_train , y_test = train_test_split(X_df ,y_df , test_size=0.1 , random_state=408570344)
 
 #XGBoost
 from xgboost import XGBClassifier
-# declare parameters
-'''
-params = { 'max_depth': 1,
-           'learning_rate': 0.01,
-           'n_estimators': 300,
-           'colsample_bytree': 1}
-'''
-#Find best parameters
-#Best parameters: {'colsample_bytree': 1, 'learning_rate': 0.01, 'max_depth': 1, 'n_estimators': 300}
 
-params = { 'max_depth': [1, 3, 6, 10],
-           'learning_rate': [0.01, 0.03, 0.06, 0.1, 0.3, 0.5],
-           'n_estimators': [100, 300, 600, 1000],
-           'colsample_bytree': [1, 3, 6, 10]}
+# declare parameters
+#Find best parameters
+#About run time 1.5 hours
+'''
+params = { 'max_depth': range (2, 15, 3),
+           'learning_rate': [0.01, 0.1, 0.5, 1, 5, 10],
+           'n_estimators': range(80, 500, 50),
+           'colsample_bytree': [0.5, 1, 3, 6, 10],
+           'min_child_weigh': range(1, 9, 1),
+           'subsample': [0.5, 0.7, 0.9, 1.5, 2]}
 
 from sklearn.model_selection import GridSearchCV
-xg2 = XGBClassifier(random_state=408570344)
+xg2 = XGBClassifier()
 clf = GridSearchCV(estimator = xg2,
                    param_grid = params,
-                   scoring = 'neg_mean_squared_error',
-                   verbose=1)
+                   scoring = 'neg_log_loss')
 clf.fit(X_train, y_train)
 
 print("Best parameters:", clf.best_params_)
+'''
+
+params = {'colsample_bytree': 0.5,
+          'learning_rate': 0.01,
+          'max_depth': 5,
+          'min_child_weigh': 1,
+          'n_estimators': 280,
+          'subsample': 0.7,
+          'random_state': 408570344}
 
 # instantiate the classifier 
-xgb_clf = clf.best_estimator_
+#model = clf.best_estimator_
+model = XGBClassifier(**params)
 # fit the classifier to the training data
-xgb_clf.fit(X_train, y_train)
+model.fit(X_train, y_train)
+
+print("Training accuracy score: ", model.score(X_train, y_train))
 
 from sklearn.metrics import accuracy_score
-y_pred = xgb_clf.predict(X_test)
-print('XGBoost model accuracy score: {0:0.4f}'. format(accuracy_score(y_test, y_pred))) #0.7092
+y_pred = model.predict(X_test)
+print('Testing accuracy score: {0:0.4f}'. format(accuracy_score(y_test, y_pred))) #0.6596
 
-'''
+#Output predict data
+result = pd.DataFrame([], columns=['Id', 'Category'])
+result['Id'] = [f'{i:03d}' for i in range(len(test))]
+result['Category'] = model.predict(test).astype(int)
+result.to_csv("data/predict.csv", index = False)
+
+import matplotlib.pyplot as plt
 import xgboost as xgb
-xgb.plot_importance(xgb_clf)
+xgb.plot_importance(model)
 plt.rcParams['figure.figsize'] = [6, 4]
 plt.show()
-'''
